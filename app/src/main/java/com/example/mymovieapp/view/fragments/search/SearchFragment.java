@@ -2,65 +2,109 @@ package com.example.mymovieapp.view.fragments.search;
 
 import android.os.Bundle;
 
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.example.mymovieapp.R;
+import com.example.mymovieapp.data.model.Movie;
+import com.example.mymovieapp.data.repository.MovieRepository;
+import com.example.mymovieapp.view.adapters.SearchAdapter;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link SearchFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
-public class SearchFragment extends Fragment {
+import java.util.List;
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+public class SearchFragment extends Fragment implements SearchContract.ViewInterface {
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    public static final String TAG = "searchFragment";
 
-    public SearchFragment() {
-        // Required empty public constructor
-    }
+    private SearchPresenter searchPresenter;
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment SearchFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static SearchFragment newInstance(String param1, String param2) {
-        SearchFragment fragment = new SearchFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
+    private ProgressBar progressBar;
+    private RecyclerView myRecyclerView;
+    private SearchAdapter searchAdapter;
+    private EditText searchEditText;
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
+
+        MovieRepository movieRepository = new MovieRepository(getActivity().getApplication());
+        searchPresenter = new SearchPresenter(this, movieRepository);
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_search, container, false);
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View rootView = inflater.inflate(R.layout.fragment_search, container, false);
+
+        final ImageView searchIcon = rootView.findViewById(R.id.searchImageViewId);
+        searchIcon.setOnClickListener(v -> searchPresenter.searchMovies());
+        searchEditText = rootView.findViewById(R.id.searchMovieEditTextId);
+
+        myRecyclerView = rootView.findViewById(R.id.recyclerViewId);
+        myRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        myRecyclerView.setHasFixedSize(true);
+
+        searchAdapter = new SearchAdapter();
+        myRecyclerView.setAdapter(searchAdapter);
+
+        final FloatingActionButton saveFab = rootView.findViewById(R.id.floatingActionBtnId);
+        saveFab.setOnClickListener(v -> searchPresenter.saveMovies(searchAdapter.getCurrentList()));
+
+        progressBar = rootView.findViewById(R.id.progressBarId);
+
+        searchPresenter.searchRandomMovies();
+
+        getActivity().setTitle("Search Movie");
+
+        return rootView;
+    }
+
+    @Override
+    public void showLoadingBar() {
+        progressBar.setVisibility(View.VISIBLE);
+        myRecyclerView.setEnabled(false);
+    }
+
+    @Override
+    public void hideLoadingBar() {
+        progressBar.setVisibility(View.GONE);
+        myRecyclerView.setEnabled(true);
+    }
+
+    @Override
+    public String textToSearchFor() {
+        return searchEditText.getText().toString();
+    }
+
+    @Override
+    public void submitList(List<Movie> listForAdapter) {
+        searchAdapter.submitList(listForAdapter);
+    }
+
+    @Override
+    public void displayMessage(String message) {
+        Toast.makeText(getActivity(), message, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void displayErrorMessage(String errorMessage) {
+        Toast.makeText(getActivity(), errorMessage, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public LifecycleOwner getViewOwner() {
+        return getViewLifecycleOwner();
     }
 }

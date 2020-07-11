@@ -2,65 +2,125 @@ package com.example.mymovieapp.view.fragments.favorites;
 
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.RelativeLayout;
+import android.widget.Toast;
 
 import com.example.mymovieapp.R;
+import com.example.mymovieapp.data.model.Movie;
+import com.example.mymovieapp.data.repository.MovieRepository;
+import com.example.mymovieapp.view.MyRecyclerView;
+import com.example.mymovieapp.view.adapters.FavoritesAdapter;
+import com.example.mymovieapp.view.fragments.details.DetailsFragment;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link FavoritesFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
-public class FavoritesFragment extends Fragment {
+public class FavoritesFragment extends Fragment implements FavoritesContract.ViewInterface, FavoritesAdapter.RecyclerViewClickListener {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    public static final String TAG = "favoritesFragmentTag";
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private FavoritesPresenter favoritesPresenter;
 
-    public FavoritesFragment() {
-        // Required empty public constructor
-    }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment FavoritesFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static FavoritesFragment newInstance(String param1, String param2) {
-        FavoritesFragment fragment = new FavoritesFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
+
+        setHasOptionsMenu(true);
+        setupPresenter();
+    }
+
+    private void setupPresenter()
+    {
+        MovieRepository movieRepository = new MovieRepository(getActivity().getApplication());
+        favoritesPresenter = new FavoritesPresenter(this, movieRepository);
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_favorites, container, false);
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        final View rootView = inflater.inflate(R.layout.fragment_favorites, container, false);
+
+        MyRecyclerView recyclerView = rootView.findViewById(R.id.favoritesRecyclerViewId);
+        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setNestedScrollingEnabled(false);
+
+        final RelativeLayout emptyView = rootView.findViewById(R.id.emptyViewId);
+        recyclerView.setEmptyView(emptyView);
+
+        FavoritesAdapter adapter = new FavoritesAdapter();
+        adapter.setOnRecyclerViewItemClickListener(this);
+        recyclerView.setAdapter(adapter);
+
+        favoritesPresenter
+                .loadSavedMovies()
+                .observe(getViewLifecycleOwner(), adapter::submitList);
+
+        getActivity().setTitle("Favorites");
+
+        return rootView;
+    }
+
+    @Override
+    public void openDetailsFragment(View view, Movie movie) {
+
+        AppCompatActivity activity = (AppCompatActivity) view.getContext();
+        final FragmentManager fragmentManager = activity.getSupportFragmentManager();
+        Fragment detailsFragment = fragmentManager.findFragmentByTag(DetailsFragment.DETAILS_FRAGMENT_TAG);
+
+        if (detailsFragment == null)
+            detailsFragment = DetailsFragment.newInstance(movie.getId());
+
+        fragmentManager
+                .beginTransaction()
+                .setCustomAnimations(android.R.anim.slide_in_left, android.R.anim.slide_out_right, android.R.anim.slide_in_left, android.R.anim.slide_out_right)
+                .replace(R.id.fragment_container, detailsFragment, DetailsFragment.DETAILS_FRAGMENT_TAG)
+                .addToBackStack(DetailsFragment.DETAILS_FRAGMENT_TAG)
+                .commit();
+    }
+
+    @Override
+    public void displayMessage(String message) {
+        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void displayErrorMessage(String errorMessage) {
+        Toast.makeText(getContext(), errorMessage, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onRecyclerViewItemClick(View view, Movie movie) {
+        openDetailsFragment(view, movie);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater)
+    {
+        inflater.inflate(R.menu.delete_all_menu, menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item)
+    {
+        if (item.getItemId() == R.id.delete_all_favorites_movie)
+        {
+            if (favoritesPresenter.canDeleteAllMovies())
+                favoritesPresenter.deleteAllMovies();
+
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 }
