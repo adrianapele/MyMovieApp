@@ -53,7 +53,7 @@ public class SearchPresenter implements SearchContract.PresenterInterface {
         else
         {
             checkedMovies.forEach(movieRepository::insert);
-           viewInterface.displayMessage("Checked movies were saved!");
+            viewInterface.displayMessage("Checked movies were saved!");
         }
     }
 }

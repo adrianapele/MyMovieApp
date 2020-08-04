@@ -1,32 +1,30 @@
 package com.example.mymovieapp.view;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.core.view.GravityCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.lifecycle.ViewModelProvider;
-
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+
 import com.example.mymovieapp.R;
-import com.example.mymovieapp.data.model.Movie;
+import com.example.mymovieapp.data.repository.MovieRepository;
 import com.example.mymovieapp.view.fragments.favorites.FavoritesFragment;
 import com.example.mymovieapp.view.fragments.home.HomeFragment;
 import com.example.mymovieapp.view.fragments.search.SearchFragment;
 import com.google.android.material.navigation.NavigationView;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener,
+        MainContract.ViewInterface
 {
     private DrawerLayout drawerLayout;
+    private MainPresenter mainPresenter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -56,6 +54,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
             navigationView.setCheckedItem(R.id.nav_home);
         }
+
+        setupPresenter();
+    }
+
+    private void setupPresenter()
+    {
+        final MovieRepository movieRepository = new MovieRepository(this.getApplication());
+        mainPresenter = new MainPresenter(movieRepository, this);
     }
 
     @Override
@@ -85,22 +91,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 break;
 
             case R.id.nav_share:
-//                final List<Movie> allSavedMovies = favoritesViewModel.getSavedMovies().getValue();
-//                if (allSavedMovies == null || allSavedMovies.size() == 0)
-//                {
-//                    Toast.makeText(this, "You don't have saved movies to share", Toast.LENGTH_SHORT).show();
-//                    break;
-//                }
-//
-//                final String savedMoviesToText = allSavedMovies
-//                        .stream()
-//                        .map(Movie::toText)
-//                        .collect(Collectors.joining(System.getProperty("line.separator")));
-//
-//                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("mailto:pele_adriana@yahoo.com"));
-//                intent.putExtra(Intent.EXTRA_SUBJECT, "My Movie List");
-//                intent.putExtra(Intent.EXTRA_TEXT, "Hi there! Checkout my favorite movie list: " + System.getProperty("line.separator") + savedMoviesToText);
-//                startActivity(intent);
+                mainPresenter.shareAllSavedMovies();
+                break;
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);
@@ -114,5 +106,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             drawerLayout.closeDrawer(GravityCompat.START);
         else
             super.onBackPressed();
+    }
+
+    @Override
+    public void displayMessage(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void startNewIntent(String moviesToText) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("mailto:pele_adriana@yahoo.com"));
+        intent.putExtra(Intent.EXTRA_SUBJECT, "My Movie List");
+        intent.putExtra(Intent.EXTRA_TEXT, "Hi there! Checkout my favorite movie list: " + System.getProperty("line.separator") + moviesToText);
+        startActivity(intent);
     }
 }
