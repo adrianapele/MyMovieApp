@@ -1,6 +1,6 @@
 package com.example.mymovieapp.view;
 
-import com.example.mymovieapp.data.model.Movie;
+import androidx.lifecycle.LifecycleOwner;
 
 public interface MainContract {
 
@@ -13,5 +13,6 @@ public interface MainContract {
     {
         void displayMessage(String message);
         void startNewIntent(String moviesToText);
+        LifecycleOwner getLifeCycleOwner();
     }
 }

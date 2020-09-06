@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.lifecycle.LifecycleOwner;
 
 import com.example.mymovieapp.R;
 import com.example.mymovieapp.data.repository.MovieRepository;
@@ -119,5 +120,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         intent.putExtra(Intent.EXTRA_SUBJECT, "My Movie List");
         intent.putExtra(Intent.EXTRA_TEXT, "Hi there! Checkout my favorite movie list: " + System.getProperty("line.separator") + moviesToText);
         startActivity(intent);
+    }
+
+    @Override
+    public LifecycleOwner getLifeCycleOwner() {
+        return this;
     }
 }

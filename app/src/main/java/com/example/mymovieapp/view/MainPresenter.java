@@ -18,17 +18,17 @@ public class MainPresenter implements MainContract.PresenterInterface {
 
     @Override
     public void shareAllSavedMovies() {
-        final List<Movie> allSavedMovies = movieRepository.getAllSavedMovies().getValue();
+        movieRepository.getAllSavedMovies().observe(viewInterface.getLifeCycleOwner(), movies -> {
+            if (movies == null || movies.size() == 0)
+                viewInterface.displayMessage("You don't have saved movies to share");
+            else {
+                final String savedMoviesToText = movies
+                        .stream()
+                        .map(Movie::toText)
+                        .collect(Collectors.joining(System.getProperty("line.separator")));
 
-        if (allSavedMovies == null || allSavedMovies.size() == 0)
-            viewInterface.displayMessage("You don't have saved movies to share");
-        else {
-            final String savedMoviesToText = allSavedMovies
-                    .stream()
-                    .map(Movie::toText)
-                    .collect(Collectors.joining(System.getProperty("line.separator")));
-
-            viewInterface.startNewIntent(savedMoviesToText);
-        }
+                viewInterface.startNewIntent(savedMoviesToText);
+            }
+        });
     }
 }
